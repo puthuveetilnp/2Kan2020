@@ -27,7 +27,7 @@ extracted_highlighted_text <- function(text, search) {
 }
 
 # Retrieve fake_phrases.xlsx
-fake_phrases = read_excel("fakephrases.xlsx")
+fake_phrases <- read_excel("fakephrases.xlsx")
 
 
 # Extract states
@@ -56,8 +56,7 @@ ui <- dashboardPage(skin = "purple",
     sidebarMenu(
             menuItem("About Us", tabName = "about", icon = icon("dashboard")), 
             menuItem("URL Checker", tabName = "widget", icon = icon("search"),
-                     badgeLabel = "new", badgeColor = "green"), 
-            menuItem("Reliable sources", tabName = "sources"))),
+                     badgeLabel = "new", badgeColor = "green"))),
   dashboardBody(
     tabItems(
       tabItem(tabName = "about", 
@@ -116,13 +115,19 @@ ui <- dashboardPage(skin = "purple",
                 We've devised a ReproRepo URL Checker Tool that, with the input of a URL of a pregnancy resource, we'll let you know how accurate the information is."
               ),
               box(title = "URL Checker",
-                  width = 9,
+                  width = 12,
                   status = "warning",
                   textInput("user_url", "Enter a url:", value=""),
                   actionButton("url_entered", "Submit!"),
                   withLoader(textOutput("results"), type="html", loader='pacman')
-                  #withLoader(verbatimTextOutput("scraped_data", placeholder=TRUE), type="html", loader="pacman")
-                  )
+                  ),
+              box(title = "More about your URL",
+                  width = 6,
+                  status = "success",
+                  h3("Here's a truncated version of the website you submitted:"),
+                  withLoader(verbatimTextOutput("scraped_data", placeholder=TRUE), type="html", loader="pacman")),
+              box(title = "Flagged Words",
+                dataTableOutput("flaggedWords"))
               )
     )
   )
@@ -143,6 +148,12 @@ server <- function(input, output) {
     }
     return(text)})
   
+  get_scraped_text = reactive({
+    s_text <- highlight(get_text(input$user_url), fake_phrases$Word)
+    print(s_text)
+    return(s_text)
+  })
+  
   observeEvent({input$graphChoices},
                if(input$graphChoices == "By Number of Fake Clinics Per Million"){
                  output$fakeclinics <- renderTmap({tm_shape(fake_clinic_density) + tm_polygons("Number of Fake Clinics Per Million", title="Number of Fake Clinics Per Million People")}
@@ -154,12 +165,21 @@ server <- function(input, output) {
                })
   
   observeEvent({input$url_entered},
-               output$results <- renderText({get_results()}),
-               #output$scraped_data <- renderText({get_text(input$user_url)})
+               output$results <- renderText({get_results()})
+               )
+  observeEvent({input$user_url},
+               if(input$user_url != ''){
+               output$scraped_data <- renderText({get_text(input$user_url)})
+               }
+               
+               else{
+                 output$scraped_data <- renderText("")
+               }
                )
   
-  
   output$clinicNums <- renderDataTable(final %>% select("State Name", "Number of Fake Clinics Per Million", "Total Number of Fake Clinics"))
+  
+  output$flaggedWords <- renderDataTable(fake_phrases)
 
 }
 
