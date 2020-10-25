@@ -126,8 +126,33 @@ ui <- dashboardPage(skin = "purple",
                   status = "success",
                   h3("Here's a truncated version of the website you submitted:"),
                   withLoader(uiOutput("scraped_data"), type="html", loader="pacman")),
-              box(title = "Flagged Words",
-                dataTableOutput("flaggedWords"))
+              boxPlus(title = "Flagged Words",
+                      enable_sidebar = TRUE,
+                      sidebar_start_open = FALSE,
+                      sidebar_width =30,
+                  dataTableOutput("flaggedWords"),
+                  sidebar_content = tagList(
+                  p("Religion:
+- Usage of religious terminology or language with a religious connotation. A strong indicator that the clinic is unlikely to be a reliable or licensed healthcare provider.
+
+Baiting:
+- Usage of enticing language or offering free services to lure potential patients into the clinic.
+
+Fearmongering:
+- Presents certain options, particularly those related to abortion, as highly dangerous or risky even when they are proven to have minimal risks. Intended to scare patients away from certain decisions.
+
+False Credibility:
+- Usage of words or phrases intended to give the source the appearance or being trustworthy. Often includes false assertions that the clinic provides unbiased, comprehensive services and education. Often creates the illusion of choice.
+
+Pathos:
+- Usage of language that makes an emotional appeal instead of providing unbiased facts. May imply that there is inherent good in conception or pregnancy while there is inherent evil in abortion or contraception.
+
+Anti-abortion:
+- Usage of words or phrases that are heavily associated with anti-abortion groups or misinformation campaigns. Sources that use these are unlikely to comprehensively present options, often neglecting to discuss or actively discouraging abortion. These clinics likely do not perform abortions and are thus also less likely to be reliable or licensed healthcare providers
+
+Misinformation:
+- Presents completely false information or misrepresents the truth in order to mislead patients. Clinics that use these often perpetuate falsehood like 'abortion can be reversed' or 'condoms are not an effective form of contraception,' among others.")
+                ))
               )
     )
   )
@@ -163,12 +188,18 @@ server <- function(input, output) {
                  )
                })
   
-  observeEvent({input$url_entered},
-               output$results <- renderText({get_results()})
+  observeEvent({input$user_url},
+               if(input$user_url != ''){
+                  output$results <- renderText({get_results()})
+               }
+               
+               else{
+                 output$results <- renderText("")
+               }
                )
   observeEvent({input$user_url},
                if(input$user_url != ''){
-               output$scraped_data <- renderUI({HTML(get_scraped_text())})
+                output$scraped_data <- renderUI({HTML(get_scraped_text())})
                }
                
                else{
