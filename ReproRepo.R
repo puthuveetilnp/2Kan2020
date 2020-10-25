@@ -125,7 +125,7 @@ ui <- dashboardPage(skin = "purple",
                   width = 6,
                   status = "success",
                   h3("Here's a truncated version of the website you submitted:"),
-                  withLoader(verbatimTextOutput("scraped_data", placeholder=TRUE), type="html", loader="pacman")),
+                  withLoader(uiOutput("scraped_data"), type="html", loader="pacman")),
               box(title = "Flagged Words",
                 dataTableOutput("flaggedWords"))
               )
@@ -150,7 +150,6 @@ server <- function(input, output) {
   
   get_scraped_text = reactive({
     s_text <- highlight(get_text(input$user_url), fake_phrases$Word)
-    print(s_text)
     return(s_text)
   })
   
@@ -169,11 +168,11 @@ server <- function(input, output) {
                )
   observeEvent({input$user_url},
                if(input$user_url != ''){
-               output$scraped_data <- renderText({get_text(input$user_url)})
+               output$scraped_data <- renderUI({HTML(get_scraped_text())})
                }
                
                else{
-                 output$scraped_data <- renderText("")
+                 output$scraped_data <- renderUI("")
                }
                )
   
