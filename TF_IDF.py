@@ -116,8 +116,9 @@ def get_text(url):
     url_list = list()
     for link in soup.find_all('a'):
         url_str = link.get('href')
-        if (url in url_str):
-            url_list.append(url_str)
+        if url_str != None:
+            if (url in url_str):
+                url_list.append(url_str)
     if(len(url_list) > 7):
         url_list=url_list[1:7]
 
@@ -144,8 +145,9 @@ def get_user_sim_score(url):
     url_list = list()
     for link in soup.find_all('a'):
         url_str = link.get('href')
-        if (url in url_str):
-            url_list.append(url_str)
+        if url_str != None:
+            if (url in url_str):
+                url_list.append(url_str)
     if(len(url_list) > 7):
         url_list=url_list[1:7]
 
@@ -156,7 +158,7 @@ def get_user_sim_score(url):
             sub_page = bs.BeautifulSoup(sub_source, 'lxml')
             for paragraph in sub_page.find_all('p'):
                 string_website = ' '.join([string_website, str(paragraph.text)])
-    try:
+    try: 
         if string_website !='':
             data_list.append(string_website)
     except:
@@ -172,4 +174,5 @@ def get_user_sim_score(url):
 
 # counts = get_user_sim_score("http://www.reallifecpc.org/")
 # print(get_user_sim_score("http://chiltonwomenscenter.com/"))
+# print(get_user_sim_score("https://www.plannedparenthood.org/"))
 
