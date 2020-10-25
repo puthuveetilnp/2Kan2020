@@ -10,6 +10,25 @@ library(sf)
 library(tmap)
 library(shinycustomloader)
 source_python("TF_IDF.py")
+  
+
+highlight <- function(text, search) {
+  x <- unlist(strsplit(text, split = " ", fixed = T))
+  x[tolower(x) %in% tolower(c(search))] <- paste0("<mark>", x[tolower(x) %in% tolower(c(search))], "</mark>")
+  paste(x, collapse = " ")
+
+}
+
+extracted_highlighted_text <- function(text, search) {
+  x <- unlist(strsplit(text, split = " ", fixed = T))
+  found_words <- x[tolower(x) %in% tolower(c(search))]
+  
+  return(found_words)
+}
+
+# Retrieve fake_phrases.xlsx
+fake_phrases = read_excel("fakephrases.xlsx")
+
 
 # Extract states
 df <- read_excel("cpc-list_uncleaned.xlsx")
@@ -53,7 +72,7 @@ ui <- dashboardPage(skin = "purple",
                   backgroundUrl = "https://images.pexels.com/photos/531880/pexels-photo-531880.jpeg?auto=compress&cs=tinysrgb&h=350",
                   closable = FALSE,
                   "About us:",
-                  footer = "ReproRepo is an nonprofit organization devoted to dispelling misinformation on reproductive health. No matter what your opinions may be, we believe all people deserve to
+                  footer = "ReproRepo is a tool devoted to dispelling misinformation on reproductive health. No matter what your opinions may be, we believe all people deserve to
                 have access to reputable, honest information. No lies and no deception."
                 )
               ),
@@ -92,21 +111,38 @@ ui <- dashboardPage(skin = "purple",
                 backgroundUrl = "https://images.pexels.com/photos/531880/pexels-photo-531880.jpeg?auto=compress&cs=tinysrgb&h=350",
                 closable = FALSE,
                 "About us:",
-                footer = "At ReproRepo, we believe that all individuals should get the care they believe they are receiving and be well informed in the choices they make. The Internet is a great place to learn more, but
+                footer = "At 2Kan2020, we believe that all individuals should get the care they believe they are receiving and be well informed in the choices they make. The Internet is a great place to learn more, but
                 reader beware, the world wide web has a lot of deceptive and outdated information. We strive to dispel false and deceptive information one website at a time, starting with pregnancy misinformation.
-                We've devised a URL Checker Tool that, with the input of a URL of a pregnancy resource, we'll let you know how accurate the information is."
+                We've devised a ReproRepo URL Checker Tool that, with the input of a URL of a pregnancy resource, we'll let you know how accurate the information is."
               ),
               box(title = "URL Checker",
+                  width = 9,
                   status = "warning",
                   textInput("user_url", "Enter a url:", value=""),
                   actionButton("url_entered", "Submit!"),
-                  withLoader(textOutput("scraped_data"), type="html", loader="pacman")
+                  withLoader(textOutput("results"), type="html", loader='pacman')
+                  #withLoader(verbatimTextOutput("scraped_data", placeholder=TRUE), type="html", loader="pacman")
                   )
               )
     )
   )
 )
+
+
 server <- function(input, output) {
+  
+  get_results = reactive({
+    result <- unlist(get_user_sim_score(input$user_url))
+    if(length(result) > 0){
+      text = paste("Our analysis shows that the information on this website is mostly likely", result[3], 
+                   ". This website matched to",  result[2], "fake clinic websites and matched to",  result[1], "credible websites")
+    }
+      
+    else{
+      text = "Oops! Seems like the website might be down or doesn't exist anymore."
+    }
+    return(text)})
+  
   observeEvent({input$graphChoices},
                if(input$graphChoices == "By Number of Fake Clinics Per Million"){
                  output$fakeclinics <- renderTmap({tm_shape(fake_clinic_density) + tm_polygons("Number of Fake Clinics Per Million", title="Number of Fake Clinics Per Million People")}
@@ -118,7 +154,9 @@ server <- function(input, output) {
                })
   
   observeEvent({input$url_entered},
-               output$scraped_data <- renderText(get_text(input$user_url)))
+               output$results <- renderText({get_results()}),
+               #output$scraped_data <- renderText({get_text(input$user_url)})
+               )
   
   
   output$clinicNums <- renderDataTable(final %>% select("State Name", "Number of Fake Clinics Per Million", "Total Number of Fake Clinics"))
