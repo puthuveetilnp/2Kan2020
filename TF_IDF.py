@@ -8,6 +8,8 @@ from nltk.stem import WordNetLemmatizer
 import nltk
 from nltk.corpus import stopwords
 import random
+import urllib.request
+import bs4 as bs
 # Download stopwords list
 
 import pickle
@@ -17,8 +19,10 @@ with open('real_data_training.pkl', 'rb') as f:
 with open('fake_data_training.pkl', 'rb') as fh:
     fake_url=pickle.load(fh)
 
-print(len(real_url))
-print(len(fake_url))
+# print(real_url)
+# print(fake_url)
+# print(len(real_url))
+# print(len(fake_url))
 
 
 data_real=[]
@@ -86,14 +90,12 @@ def get_cosine_sim(test):
             else:
                 count_real+=1
         if(count_real>count_fake):
-            fake_count.append((count_real, count_fake,"real"))
+            fake_count.append((count_real, count_fake, "credible"))
         else:
-            fake_count.append((count_real, count_fake, "fake"))
+            fake_count.append((count_real, count_fake, "false"))
 
         fake_list.append(fake_indv_list)
     return(fake_list,fake_count)
-
-
 
 def get_acc(list_count, real_fake):
     count=0
@@ -102,49 +104,72 @@ def get_acc(list_count, real_fake):
             count+=1
     return(count/len(list_count))
 
+def get_text(url):
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    source = urllib.request.urlopen(req).read()
+    soup = bs.BeautifulSoup(source, 'lxml')
 
-fake_list,fake_count=get_cosine_sim(test_fake_x)
-real_list,real_count=get_cosine_sim(test_real_x)
+    string_website = ""
+    for paragraph in soup.find_all('p'):
+        string_website = ' '.join([string_website, str(paragraph.text)])
 
+    url_list = list()
+    for link in soup.find_all('a'):
+        url_str = link.get('href')
+        if (url in url_str):
+            url_list.append(url_str)
+    if(len(url_list) > 7):
+        url_list=url_list[1:7]
 
-
-print(get_acc(real_count,"real"), get_acc(fake_count,"fake"))
-
-
-with open('fake_list.pkl', 'wb') as f:
-    pickle.dump(fake_count, f)
-
-with open('real_list.pkl', 'wb') as f:
-    pickle.dump(real_count, f)
-
-# print(len(train_real))
-# print(len(test_real))
-
-
-#
-# train_real = real_url[:int((len(real_url)+1)*.80)]
-# test_real=real_url[int((len(real_url)+1)*.80):]
-# print(len(train_real))
-# print(len(test_real))
-# train_fake = fake_url[:int((len(real_url)+1)*.80)]
-# test_fake=fake_url[int((len(real_url)+1)*.80):]
-#
-# print(len(train_fake))
-# print(len(test_fake))
-# with open('real_train.pkl', 'wb') as f:
-#     pickle.dump(train_real, f)
-#
-# with open('real_test.pkl', 'wb') as f:
-#     pickle.dump(test_real, f)
-#
-# with open('fake_train.pkl', 'wb') as f:
-#     pickle.dump(train_fake, f)
-#
-# with open('fake_test.pkl', 'wb') as f:
-#     pickle.dump(test_fake, f)
+    for web_link in url_list:
+        if ('location' not in url):
+            sub_req = urllib.request.Request(web_link, headers={'User-Agent': 'Mozilla/5.0'})
+            sub_source = urllib.request.urlopen(sub_req).read()
+            sub_page = bs.BeautifulSoup(sub_source, 'lxml')
+            for paragraph in sub_page.find_all('p'):
+                string_website = ' '.join([string_website, str(paragraph.text)])
+    return string_website
 
 
-# X_train, X_test, y_train, y_test = train_test_split(real_url, y, test_size=0.2)
-# print X_train.shape, y_train.shape
-# print X_test.shape, y_test.shape
+def get_user_sim_score(url):
+    data_list=list()
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    source = urllib.request.urlopen(req).read()
+    soup = bs.BeautifulSoup(source, 'lxml')
+
+    string_website = ""
+    for paragraph in soup.find_all('p'):
+        string_website = ' '.join([string_website, str(paragraph.text)])
+
+    url_list = list()
+    for link in soup.find_all('a'):
+        url_str = link.get('href')
+        if (url in url_str):
+            url_list.append(url_str)
+    if(len(url_list) > 7):
+        url_list=url_list[1:7]
+
+    for web_link in url_list:
+        if ('location' not in url):
+            sub_req = urllib.request.Request(web_link, headers={'User-Agent': 'Mozilla/5.0'})
+            sub_source = urllib.request.urlopen(sub_req).read()
+            sub_page = bs.BeautifulSoup(sub_source, 'lxml')
+            for paragraph in sub_page.find_all('p'):
+                string_website = ' '.join([string_website, str(paragraph.text)])
+    try:
+        if string_website !='':
+            data_list.append(string_website)
+    except:
+        pass
+
+    test_list,test_count=get_cosine_sim(data_list)
+    if len(test_count) > 0: 
+        return list(test_count[0])
+    else:
+        return test_count
+
+
+
+# counts = get_user_sim_score("http://www.reallifecpc.org/")
+# print(get_user_sim_score("http://chiltonwomenscenter.com/"))
 
