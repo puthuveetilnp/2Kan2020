@@ -1,3 +1,4 @@
+
 import pandas as pd
 from sklearn import datasets, linear_model
 from sklearn.model_selection import train_test_split
@@ -49,6 +50,7 @@ train_fake_y= fake_label[:int((len(real_label)+1)*.80)]
 test_fake_y=fake_label[int(len(real_label)*.80):]
 
 
+#https://towardsdatascience.com/how-to-rank-text-content-by-semantic-similarity-4d2419a84c32
 
 nltk.download('punkt')
 stop_words = set(stopwords.words('english'))
